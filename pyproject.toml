@@ -3,12 +3,9 @@ name = "minifsdp"
 version = "0.1.0"
 description = "A lightweight ML distributed training library using PyTorch FSDP"
 readme = "README.md"
-authors = [
-    { name = "Carlos Ezequiel", email = "carlos@firnresearch.com" }
-]
+authors = [{ name = "Carlos Ezequiel", email = "carlos@firnresearch.com" }]
 requires-python = ">=3.14"
-dependencies = [
-]
+dependencies = ["numpy>=2.5.3", "torch>=2.14.0"]
 
 [build-system]
 requires = ["uv_build>=0.11.26,<0.12.0"]
@@ -26,20 +23,23 @@ dev = [
     "ruff>=0.15.20",
     "ty>=0.0.58",
 ]
-notebook = [
-    "ipykernel>=7.3.0",
-    "matplotlib>=3.11.0",
-    "tqdm>=4.68.4",
-]
+notebook = ["ipykernel>=7.3.0", "matplotlib>=3.11.0", "tqdm>=4.68.4"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
-addopts = "--cov=minifsdp --cov-report=term-missing --cov-report=html --cov-report=json --import-mode=importlib"
+addopts = "--cov=src/minifsdp --cov-report=term-missing --cov-report=html --cov-report=json --import-mode=importlib --cov-config=pyproject.toml"
 pythonpath = ["."]
 
 [tool.coverage.run]
 branch = true
+parallel = true #  enables per-process .coverage.NNN files that get combined
+concurrency = [
+    "multiprocessing",
+] # ensures coverage handles fork/spawn correctly
+omit = [
+    "tests/*",
+] # excludes test files from measurement so subprocess re-imports don't skew the total
 
 [tool.coverage.report]
 fail_under = 80
@@ -59,16 +59,16 @@ extend-include = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
-    "E",  # PEP8 errors
-    "W",  # PEP8 warnings
-    "F",  # Pyflakes
-    "I",  # Isort
-    "B",  # flake-bugbear
-    "D",  # pydocstyle rules
+    "E", # PEP8 errors
+    "W", # PEP8 warnings
+    "F", # Pyflakes
+    "I", # Isort
+    "B", # flake-bugbear
+    "D", # pydocstyle rules
 ]
 ignore = [
-    "D1",    # Ignore missing docstrings
-    "D203",  # Conflict with D211
+    "D1",   # Ignore missing docstrings
+    "D203", # Conflict with D211
 ]
 
 [tool.ruff.lint.pydocstyle]
