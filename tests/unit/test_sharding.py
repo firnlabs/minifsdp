@@ -7,11 +7,10 @@ from torch.distributed.device_mesh import DeviceMesh
 from torch.distributed.fsdp import FSDPModule
 
 from minifsdp import sharding
-from tests.unit.conftest import distributed
 
 
 class SimpleModel(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._fc1 = nn.Linear(4, 8, bias=False)
         self._fc2 = nn.Linear(8, 1, bias=False)
@@ -23,16 +22,17 @@ class SimpleModel(nn.Module):
 
 @pytest.fixture
 def model() -> nn.Module:
+    """Return a simple two-layer model."""
     return SimpleModel()
 
 
-@distributed(world_size=2)
-def test_shard_model_default_config(
-    rank: int, world_size: int, mesh: DeviceMesh, model: nn.Module
-):
-    _ = rank  # unused
-    _ = world_size  # unused
+# module-level so mp.spawn can pickle it.
+def _assert_shard_model_default_config(mesh: DeviceMesh, model: nn.Module) -> None:
     config = sharding.FSDP2Config(mesh=mesh)
     sharded = sharding.shard_model(model, config)
-
     assert isinstance(sharded, FSDPModule)
+
+
+def test_shard_model_default_config(run_distributed, model: nn.Module) -> None:
+    """Test that shard_model wraps a model with FSDP2."""
+    run_distributed(_assert_shard_model_default_config, model)
