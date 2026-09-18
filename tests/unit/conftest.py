@@ -25,7 +25,12 @@ def _distributed_wrapper(
 
 
 @pytest.fixture
-def run_distributed() -> Callable[..., None]:
+def world_size() -> int:
+    return 2
+
+
+@pytest.fixture
+def run_distributed(world_size: int) -> Callable[..., None]:
     """Fixture: run a callable inside the multiprocessing harness.
 
     The callable receives the harness-constructed ``mesh`` as its first
@@ -41,7 +46,7 @@ def run_distributed() -> Callable[..., None]:
             run_distributed(_body, model)
     """
 
-    def _run(fn: Callable[..., None], *args: Any, world_size: int = 2) -> None:
+    def _run(fn: Callable[..., None], *args: Any) -> None:
         dist.run_multiprocess(_distributed_wrapper, world_size, fn, args)
 
     return _run
