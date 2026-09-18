@@ -8,6 +8,7 @@ from typing import Any
 from torch import nn
 from torch.distributed import fsdp
 from torch.distributed.device_mesh import DeviceMesh
+from torch.distributed.tensor import DTensor
 
 
 @dataclass
@@ -46,9 +47,34 @@ def shard_model(model: nn.Module, config: FSDP2Config | None = None) -> nn.Modul
     return model
 
 
-def inspect_dtensors(model: nn.Module) -> dict[str, dict[str, Any]]:
-    """Extracts sharded parameter metadata.
+@dataclass(frozen=True)
+class ParamStats:
+    """Distributed parameter stats."""
 
-    Metadata: (is_dtensor, placements, global_shape, local_shape, local_numel).
-    """
-    raise NotImplementedError
+    is_dtensor: bool
+    global_shape: tuple[int, ...]
+    global_numel: int
+    local_shape: tuple[int, ...]
+    local_numel: int
+    placements: Any
+
+
+def inspect_dtensors(model: nn.Module) -> dict[str, ParamStats]:
+    """Extracts sharded parameter metadata."""
+    stats = {}
+
+    for n, p in model.named_parameters():
+        is_dtensor = isinstance(p, DTensor)
+        local_p = p.to_local() if is_dtensor else p
+        placements = p.placements if is_dtensor and hasattr(p, "placements") else None
+        p_stats = ParamStats(
+            is_dtensor=is_dtensor,
+            global_shape=p.shape,
+            global_numel=p.numel(),
+            local_shape=local_p.shape,
+            local_numel=local_p.numel(),
+            placements=placements,
+        )
+        stats[n] = p_stats
+
+    return stats
