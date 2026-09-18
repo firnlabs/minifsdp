@@ -6,8 +6,8 @@ from torch import Tensor
 from torch.distributed.device_mesh import DeviceMesh
 from torch.distributed.fsdp import FSDPModule
 
-from minifsdp import dist
 from minifsdp import sharding
+from tests.unit.conftest import distributed
 
 
 class SimpleModel(nn.Module):
@@ -26,14 +26,13 @@ def model() -> nn.Module:
     return SimpleModel()
 
 
-def _test_fn(rank: int, world_size: int, mesh: DeviceMesh, model: nn.Module):
+@distributed(world_size=2)
+def test_shard_model_default_config(
+    rank: int, world_size: int, mesh: DeviceMesh, model: nn.Module
+):
+    _ = rank  # unused
+    _ = world_size  # unused
     config = sharding.FSDP2Config(mesh=mesh)
     sharded = sharding.shard_model(model, config)
 
     assert isinstance(sharded, FSDPModule)
-
-
-def test_shard_model_default_config(model):
-
-    world_size = 2
-    dist.run_multiprocess(_test_fn, world_size, model)
