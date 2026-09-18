@@ -4,14 +4,34 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+from torch import nn
+from torch import Tensor
+from torch.distributed.device_mesh import DeviceMesh
 
 from minifsdp import dist
+
+
+class SimpleModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self._fc1 = nn.Linear(4, 8, bias=False)
+        self._fc2 = nn.Linear(8, 1, bias=False)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = self._fc1(x)
+        return self._fc2(x)
+
+
+@pytest.fixture
+def model() -> nn.Module:
+    """Return a simple two-layer model."""
+    return SimpleModel()
 
 
 def _distributed_wrapper(
     rank: int,
     world_size: int,
-    mesh: dist.DeviceMesh,
+    mesh: DeviceMesh,
     fn: Callable[..., None],
     args: tuple[Any, ...],
 ) -> None:
