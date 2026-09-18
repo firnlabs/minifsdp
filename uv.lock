@@ -865,6 +865,7 @@ name = "minifsdp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "numpy" },
     { name = "torch" },
 ]
 
@@ -887,7 +888,10 @@ notebook = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "torch", specifier = ">=2.14.0" }]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.5.3" },
+    { name = "torch", specifier = ">=2.14.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [
