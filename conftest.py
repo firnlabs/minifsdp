@@ -2,6 +2,7 @@
 
 import os
 import subprocess
+import sys
 
 
 def pytest_configure(config: object) -> None:
@@ -11,4 +12,6 @@ def pytest_configure(config: object) -> None:
 
 def pytest_sessionfinish(session: object, exitstatus: int) -> None:
     """Combine subprocess coverage files after pytest-cov finishes reporting."""
-    subprocess.run(["coverage", "combine", "--append"], capture_output=True)
+    subprocess.run(
+        [sys.executable, "-m", "coverage", "combine", "--append"], capture_output=True
+    )

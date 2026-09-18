@@ -1,0 +1,47 @@
+"""Unit-test conftest: distributed test helpers."""
+
+from collections.abc import Callable
+from typing import Any
+
+import pytest
+
+from minifsdp import dist
+
+
+def _distributed_wrapper(
+    rank: int,
+    world_size: int,
+    mesh: dist.DeviceMesh,
+    fn: Callable[..., None],
+    args: tuple[Any, ...],
+) -> None:
+    """Module-level worker: unpickles fn and args, then calls fn(mesh, *args).
+
+    Must be defined at module scope so that ``mp.spawn`` (which uses pickle) can
+    serialise it.  The harness-constructed ``mesh`` is forwarded as the first argument
+    so the callable can use it if needed.
+    """
+    fn(mesh, *args)
+
+
+@pytest.fixture
+def run_distributed() -> Callable[..., None]:
+    """Fixture: run a callable inside the multiprocessing harness.
+
+    The callable receives the harness-constructed ``mesh`` as its first
+    argument, followed by any user-supplied positional arguments.
+
+    Example::
+
+        def _body(mesh: DeviceMesh, model: nn.Module) -> None:
+            config = sharding.FSDP2Config(mesh=mesh)
+            ...
+
+        def test_foo(run_distributed, model: nn.Module) -> None:
+            run_distributed(_body, model)
+    """
+
+    def _run(fn: Callable[..., None], *args: Any, world_size: int = 2) -> None:
+        dist.run_multiprocess(_distributed_wrapper, world_size, fn, args)
+
+    return _run
