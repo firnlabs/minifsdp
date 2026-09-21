@@ -7,7 +7,28 @@ from torch.distributed.tensor import DTensor
 
 from minifsdp import dist
 from minifsdp import sharding
-from tests.conftest import SimpleModel
+
+
+class DeepModelBlock(nn.Module):
+    def __init__(self, dim: int):
+        super().__init__()
+        self.fc1 = nn.Linear(dim, dim)
+        self.fc2 = nn.Linear(dim, dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.fc2(torch.relu(self.fc1(x)))
+
+
+class DeepModel(nn.Module):
+    def __init__(self, *, dim: int, num_layers: int):
+        super().__init__()
+        self.blocks = nn.ModuleList([DeepModelBlock(dim) for _ in range(num_layers)])
+        self.head = nn.Linear(dim, 1, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for b in self.blocks:
+            x = b(x)
+        return self.head(x)
 
 
 def _parity_worker(
@@ -17,13 +38,20 @@ def _parity_worker(
 ) -> None:
     random_seed = 42  # initial FSDP and single-process models with identical seeds
     torch.manual_seed(random_seed)
-    fsdp_model = SimpleModel()
-    config = sharding.FSDP2Config(mesh=mesh)
+    model_dim = 4
+    num_layers = 10
+    fsdp_model = DeepModel(dim=model_dim, num_layers=num_layers)
+    config = sharding.FSDP2Config(
+        mesh=mesh,
+        target_module_classes={
+            DeepModelBlock,
+        },
+    )
     sharded_model = sharding.shard_model(fsdp_model, config)
 
     batch_size = 8
     torch.manual_seed(random_seed)
-    x_global = torch.randn(batch_size, 4)
+    x_global = torch.randn(batch_size, model_dim)
     y_global = x_global.sum(-1, keepdim=True)
     learning_rate = 0.01
 
@@ -50,7 +78,7 @@ def _parity_worker(
     if rank == 0:  # run the parity test on one worker only
         # train single-process model as reference
         torch.manual_seed(random_seed)
-        single_model = SimpleModel()
+        single_model = DeepModel(dim=model_dim, num_layers=num_layers)
         single_opt = torch.optim.AdamW(single_model.parameters(), lr=learning_rate)
         single_criterion = nn.MSELoss()
         single_opt.zero_grad()
