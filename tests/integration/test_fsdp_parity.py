@@ -12,9 +12,7 @@ from tests.conftest import DeepModelBlock
 
 
 def _parity_worker(
-    rank: dist.Rank,
-    world_size: dist.WorldSize,
-    mesh: DeviceMesh,
+    rank: dist.Rank, world_size: dist.WorldSize, mesh: DeviceMesh
 ) -> None:
     random_seed = 42  # initial FSDP and single-process models with identical seeds
     torch.manual_seed(random_seed)
