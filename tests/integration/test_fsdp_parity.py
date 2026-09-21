@@ -7,28 +7,8 @@ from torch.distributed.tensor import DTensor
 
 from minifsdp import dist
 from minifsdp import sharding
-
-
-class DeepModelBlock(nn.Module):
-    def __init__(self, dim: int):
-        super().__init__()
-        self.fc1 = nn.Linear(dim, dim)
-        self.fc2 = nn.Linear(dim, dim)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x + self.fc2(torch.relu(self.fc1(x)))
-
-
-class DeepModel(nn.Module):
-    def __init__(self, *, dim: int, num_layers: int):
-        super().__init__()
-        self.blocks = nn.ModuleList([DeepModelBlock(dim) for _ in range(num_layers)])
-        self.head = nn.Linear(dim, 1, bias=False)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        for b in self.blocks:
-            x = b(x)
-        return self.head(x)
+from tests.conftest import DeepModel
+from tests.conftest import DeepModelBlock
 
 
 def _parity_worker(

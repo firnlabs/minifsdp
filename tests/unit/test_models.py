@@ -13,13 +13,13 @@ from minifsdp import sharding
 
 
 @pytest.fixture
-def actor(model) -> nn.Module:
-    return model
+def actor(simple_model) -> nn.Module:
+    return simple_model
 
 
 @pytest.fixture
-def reference(model) -> nn.Module:
-    return copy.deepcopy(model)
+def reference(simple_model) -> nn.Module:
+    return copy.deepcopy(simple_model)
 
 
 def _assert_init(mesh: DeviceMesh, actor: nn.Module, reference: nn.Module):

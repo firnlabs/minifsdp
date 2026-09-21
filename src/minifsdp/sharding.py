@@ -8,6 +8,7 @@ from typing import Any
 from torch import nn
 from torch.distributed import fsdp
 from torch.distributed.device_mesh import DeviceMesh
+from torch.distributed.fsdp import FSDPModule
 from torch.distributed.tensor import DTensor
 
 
@@ -36,12 +37,13 @@ def shard_model(model: nn.Module, config: FSDP2Config | None = None) -> nn.Modul
         mp_policy=config.mp_policy,
     )
 
-    for layer in model.children():
-        if (
-            config.target_module_classes is not None
-            and type(layer) in config.target_module_classes
-        ):
-            shard_fn(layer)
+    if config.target_module_classes is not None:
+        for layer in model.modules():
+            if type(layer) in config.target_module_classes and not isinstance(
+                layer, FSDPModule
+            ):
+                shard_fn(layer)
+
     shard_fn(model)
 
     return model
