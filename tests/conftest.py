@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+import torch
 from torch import nn
 from torch import Tensor
 from torch.distributed.device_mesh import DeviceMesh
@@ -23,9 +24,37 @@ class SimpleModel(nn.Module):
 
 
 @pytest.fixture
-def model() -> nn.Module:
+def simple_model() -> nn.Module:
     """Return a simple two-layer model."""
+    torch.manual_seed(42)
     return SimpleModel()
+
+
+class DeepModelBlock(nn.Module):
+    def __init__(self, dim: int):
+        super().__init__()
+        self.fc1 = nn.Linear(dim, dim)
+        self.fc2 = nn.Linear(dim, dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return x + self.fc2(torch.relu(self.fc1(x)))
+
+
+class DeepModel(nn.Module):
+    def __init__(self, *, dim: int, num_layers: int):
+        super().__init__()
+        self.blocks = nn.ModuleList([DeepModelBlock(dim) for _ in range(num_layers)])
+        self.head = nn.Linear(dim, 1, bias=False)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for b in self.blocks:
+            x = b(x)
+        return self.head(x)
+
+
+@pytest.fixture
+def deep_model() -> DeepModel:
+    return DeepModel(dim=4, num_layers=5)
 
 
 def _distributed_wrapper(
