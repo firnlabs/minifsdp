@@ -8,7 +8,6 @@ from torch.distributed.tensor import DTensor
 from minifsdp import sharding
 
 
-# module-level so mp.spawn can pickle it.
 def _assert_shard_model_default_config(mesh: DeviceMesh, model: nn.Module) -> None:
     config = sharding.FSDP2Config(mesh=mesh)
     sharded = sharding.shard_model(model, config)

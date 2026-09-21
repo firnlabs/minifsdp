@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
+import torch
 from torch import nn
 from torch import Tensor
 from torch.distributed.device_mesh import DeviceMesh
@@ -25,6 +26,7 @@ class SimpleModel(nn.Module):
 @pytest.fixture
 def model() -> nn.Module:
     """Return a simple two-layer model."""
+    torch.manual_seed(42)
     return SimpleModel()
 
 
