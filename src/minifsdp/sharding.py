@@ -1,4 +1,4 @@
-"""Model sharding."""
+"""PyTorch FSDP2 model sharding and distributed parameter inspection."""
 
 from dataclasses import dataclass
 from dataclasses import field
@@ -14,6 +14,17 @@ from torch.distributed.tensor import DTensor
 
 @dataclass
 class FSDP2Config:
+    """Configuration options for PyTorch FSDP2 model sharding.
+
+    Attributes:
+        mesh: 1D or 2D device mesh topology for distributed execution.
+        target_module_classes: Specific module types to shard individually before
+            root-level sharding.
+        reshard_after_forward: If True, frees gathered full parameters after forward
+            pass to minimize memory footprint.
+        mp_policy: Mixed precision communication and computation policy.
+    """
+
     mesh: DeviceMesh | None = None
     target_module_classes: set[type[nn.Module]] | None = None
     reshard_after_forward: bool = True
@@ -23,7 +34,21 @@ class FSDP2Config:
 
 
 def shard_model(model: nn.Module, config: FSDP2Config | None = None) -> nn.Module:
-    """Applies FSDP2 fully_shard to the root model."""
+    """Applies PyTorch FSDP2 `fully_shard` to target submodules and the root model.
+
+    Mutates modules in-place by attaching FSDP communication hooks to any submodules
+    matching `target_module_classes`, followed by the root module.
+
+    Args:
+        model: Target module to shard.
+        config: FSDP2 configuration settings.
+
+    Returns:
+        The sharded `FSDPModule` root model.
+
+    Raises:
+        ValueError: If `model` is already an `FSDPModule`.
+    """
     if isinstance(model, fsdp.FSDPModule):
         raise ValueError("model is already FSDP sharded.")
 
@@ -51,7 +76,7 @@ def shard_model(model: nn.Module, config: FSDP2Config | None = None) -> nn.Modul
 
 @dataclass(frozen=True)
 class ParamStats:
-    """Distributed parameter stats."""
+    """Metadata and local/global shape statistics for a model parameter."""
 
     is_dtensor: bool
     global_shape: tuple[int, ...]
@@ -62,7 +87,14 @@ class ParamStats:
 
 
 def inspect_dtensors(model: nn.Module) -> dict[str, ParamStats]:
-    """Extracts sharded parameter metadata."""
+    """Extracts distributed tensor metadata and shard statistics for all parameters.
+
+    Args:
+        model: Module containing parameters to inspect.
+
+    Returns:
+        Mapping of parameter names to `ParamStats` records.
+    """
     stats = {}
 
     for n, p in model.named_parameters():

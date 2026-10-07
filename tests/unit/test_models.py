@@ -1,5 +1,3 @@
-"""Tests for models.py."""
-
 import copy
 
 import pytest

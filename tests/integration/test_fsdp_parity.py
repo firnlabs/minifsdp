@@ -1,4 +1,8 @@
-"""Tests FSDP model parity with single-process model."""
+"""Integration tests verifying numerical parity between FSDP2 and single process.
+
+Spawns multi-process Gloo workers to verify that forward activations, backward
+gradients, and optimizer updates match an unshared single-process model.
+"""
 
 import torch
 from torch import nn
