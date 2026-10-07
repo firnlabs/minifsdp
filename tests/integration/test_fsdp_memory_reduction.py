@@ -1,4 +1,8 @@
-"""Tests parameter memory reduction per process through FSDP."""
+"""Integration tests verifying per-rank parameter memory reduction under FSDP2.
+
+Spawns multi-process Gloo workers to verify that DTensor parameter numel scales
+inversely with world size compared to an unshared single-process baseline.
+"""
 
 from torch.distributed.device_mesh import DeviceMesh
 from torch.distributed.tensor import DTensor

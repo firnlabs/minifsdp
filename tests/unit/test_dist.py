@@ -1,5 +1,3 @@
-"""Tests for dist.py."""
-
 from pathlib import Path
 
 import pytest

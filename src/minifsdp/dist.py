@@ -43,7 +43,17 @@ def run_multiprocess(
     world_size: WorldSize = 2,
     *args: Any,
 ) -> None:
-    """Multiprocessing harness."""
+    """Spawns distributed worker processes with Gloo backend and DeviceMesh.
+
+    Creates an isolated temporary file rendezvous, initializes a 1D CPU
+    DeviceMesh, executes `fn(rank, world_size, mesh, *args)` across spawned
+    workers, and guarantees clean process group teardown.
+
+    Args:
+        fn: Target function invoked by each rank.
+        world_size: Number of concurrent worker processes to spawn.
+        *args: Positional arguments forwarded to `fn`.
+    """
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     init_method = f"file://{temp_file.name}"
     all_args = [world_size, init_method]

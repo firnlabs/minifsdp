@@ -1,5 +1,3 @@
-"""Tests for sharding.py."""
-
 import pytest
 from torch import nn
 from torch.distributed.device_mesh import DeviceMesh
