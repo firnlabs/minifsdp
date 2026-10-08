@@ -1,5 +1,6 @@
 """Model abstractions and paired actor-reference architectures."""
 
+import torch
 from torch import nn
 from torch import Tensor
 
@@ -47,6 +48,7 @@ class ActorReference:
         """Executes forward pass through the trainable actor model."""
         return self.actor(*args, **kwargs)
 
+    @torch.no_grad()
     def forward_reference(self, *args, **kwargs) -> Tensor:
         """Executes forward pass through reference model, returning detached output."""
         out = self.reference(*args, **kwargs)
