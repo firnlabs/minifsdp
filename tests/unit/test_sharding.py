@@ -78,3 +78,29 @@ def test_inspect_dtensors(run_distributed, simple_model: nn.Module):
         assert stats.placements is None
 
     run_distributed(_assert_dist_inspect_tensors, simple_model)
+
+
+def test_shard_model_bottom_up_traversal(monkeypatch):
+    class ChildBlock(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.linear = nn.Linear(4, 4)
+
+    class ParentBlock(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.child = ChildBlock()
+
+    model = ParentBlock()
+    sharded_order: list[type] = []
+
+    def mock_fully_shard(module, **kwargs):
+        sharded_order.append(type(module))
+        return module
+
+    monkeypatch.setattr("torch.distributed.fsdp.fully_shard", mock_fully_shard)
+
+    config = sharding.FSDP2Config(target_module_classes={ChildBlock, ParentBlock})
+    sharding.shard_model(model, config)
+
+    assert sharded_order == [ChildBlock, ParentBlock, ParentBlock]

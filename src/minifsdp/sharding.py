@@ -63,7 +63,7 @@ def shard_model(model: nn.Module, config: FSDP2Config | None = None) -> nn.Modul
     )
 
     if config.target_module_classes is not None:
-        for layer in model.modules():
+        for layer in reversed(list(model.modules())):
             if type(layer) in config.target_module_classes and not isinstance(
                 layer, FSDPModule
             ):
