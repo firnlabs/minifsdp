@@ -56,8 +56,7 @@ def run_multiprocess(
     """
     temp_file = tempfile.NamedTemporaryFile(delete=False)
     init_method = f"file://{temp_file.name}"
-    all_args = [world_size, init_method]
-    all_args += args
+    temp_file.close()
     try:
         mp.spawn(
             _worker_wrapper,
